@@ -1,0 +1,33 @@
+#!/bin/bash
+#----------------------------------------------------
+#SBATCH -J myjob           # Job name
+#SBATCH -o myjob.o%j       # Name of stdout output file
+#SBATCH -e myjob.e%j       # Name of stderr error file
+#SBATCH -p development          # Queue (partition) name
+#SBATCH -N 1               # Total # of nodes (still use 1 node)
+#SBATCH -n 64              # Total # ask for 64 cores on a node
+#SBATCH -t 00:05:00        # Run time (hh:mm:ss)
+#SBATCH --mail-user=kgaddampally@umassd.edu
+#SBATCH --mail-type=all    # Send email at begin and end of job
+
+TIMEFORMAT=%R
+
+# the number of points to use in the kd-tree
+NPTS=100000
+
+# time the serial kd-tree
+if [ -f kdtree.t ]; then
+    rm kdtree.t
+fi
+echo "serial kd-tree:"
+{ time ./kdtree $NPTS; } 2>> kdtree.t
+
+# time the OpenMP kd-tree
+if [ -f kdtree_OMP.t ]; then
+    rm kdtree_OMP.t
+fi
+echo "OpenMP kd-tree:"
+for NTHREADS in 1 2 4 8 16 32 64; do
+    echo -n "$NTHREADS " >> kdtree_OMP.t
+    { time ./kdmp $NPTS $NTHREADS; } 2>> kdtree_OMP.t
+done
